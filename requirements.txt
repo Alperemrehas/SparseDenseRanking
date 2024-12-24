@@ -1,0 +1,9 @@
+numpy
+pandas
+scikit-learn
+transformers
+sentence-transformers
+faiss-cpu
+lucene
+pyserini
+tqdm
