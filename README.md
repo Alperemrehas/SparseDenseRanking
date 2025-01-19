@@ -60,3 +60,12 @@ Sparse MRR@10: 0.9785,Dense: 0.9304, RRF: 0.9813, Hybrid: 0.9780, Cross: 0.9602
 
 
 
+📊 **Final Evaluation Metrics**
+Sparse - MRR@10: 0.9785, nDCG@10: 0.9760, Recall@1k: 0.1211, MAP: 0.2543
+Dense - MRR@10: 0.9304, nDCG@10: 0.9189, Recall@1k: 0.0930, MAP: 0.1422
+Hybrid - MRR@10: 0.9813, nDCG@10: 0.9805, Recall@1k: 0.1304, MAP: 0.1389
+RRF - MRR@10: 0.9813, nDCG@10: 0.9805, Recall@1k: 0.1304, MAP: 0.1389
+Cross - MRR@10: 0.9813, nDCG@10: 0.9805, Recall@1k: 0.1304, MAP: 0.1389
+
+
+
