@@ -4,7 +4,6 @@ import re
 import time
 import faiss
 import numpy as np
-import subprocess
 from tqdm import tqdm
 from pyserini.search.lucene import LuceneSearcher
 from sentence_transformers import SentenceTransformer
@@ -30,16 +29,9 @@ def parse_trec_queries(file_path):
         for topic in topics:
             num_match = re.search(r"<num>\s*Number:\s*(\d+)", topic)
             title_match = re.search(r"<title>\s*(.*?)\n", topic)
-            desc_match = re.search(r"<desc>\s*Description:\s*(.*?)\n\n", topic, re.DOTALL)
-            narr_match = re.search(r"<narr>\s*Narrative:\s*(.*?)\n\n", topic, re.DOTALL)
-
             if num_match and title_match:
                 query_id = num_match.group(1).strip()
-                queries[query_id] = {
-                    "title": title_match.group(1).strip(),
-                    "description": desc_match.group(1).strip() if desc_match else "",
-                    "narrative": narr_match.group(1).strip() if narr_match else "",
-                }
+                queries[query_id] = title_match.group(1).strip()
 
     return queries
 
@@ -98,8 +90,11 @@ def search_sparse(query, index_path, top_k=10):
     searcher = LuceneSearcher(index_path)
     searcher.set_bm25(k1=0.9, b=0.4)
 
+    start_time = time.time()
     hits = searcher.search(query, k=top_k)
-    return [(hit.docid.strip().lower(), hit.score) for hit in hits]  # Normalize doc IDs
+    end_time = time.time()
+
+    return [(hit.docid.strip().lower(), hit.score) for hit in hits], end_time - start_time  # Normalize doc IDs
 
 def search_dense(query, index_path, model_name="sentence-transformers/all-mpnet-base-v2", top_k=10):
     """Performs vector similarity search on the dense FAISS index."""
@@ -108,35 +103,57 @@ def search_dense(query, index_path, model_name="sentence-transformers/all-mpnet-
     doc_ids = np.load(index_path + "_doc_ids.npy", allow_pickle=True)
 
     query_embedding = model.encode(query, convert_to_numpy=True, normalize_embeddings=True).reshape(1, -1)
+
+    start_time = time.time()
     distances, indices = index.search(query_embedding, top_k)
+    end_time = time.time()
 
     results = [(doc_ids[i].strip().lower(), 1 / (1 + distances[0][j])) for j, i in enumerate(indices[0])]
-    return results
+    return results, end_time - start_time
 
 # ------------------------------------- #
 # ✅ Step 5: Evaluation Metrics
 # ------------------------------------- #
 def mean_reciprocal_rank(ranking, relevant_docs):
-    """Calculates Mean Reciprocal Rank (MRR)."""
-    for i, doc_id in enumerate(ranking):
+    """Calculates Mean Reciprocal Rank (MRR@10)."""
+    for i, doc_id in enumerate(ranking[:10]):
         if doc_id in relevant_docs:
             return 1 / (i + 1)
     return 0
 
-def convert_to_relevance_vector(relevant_docs, ranking):
-    """Convert a ranked list into a relevance score vector (1 if relevant, 0 if not)."""
-    return [1 if doc_id in relevant_docs else 0 for doc_id in ranking]
+def compute_ndcg(ranked_list, relevant_docs, k=10):
+    """Computes nDCG@10."""
+    relevance = [1 if doc_id in relevant_docs else 0 for doc_id in ranked_list[:k]]
+    return ndcg_score([relevance], [list(range(len(relevance), 0, -1))])
+
+def recall_at_k(ranked_list, relevant_docs, k=1000):
+    """Computes Recall@1k."""
+    retrieved_docs = set(ranked_list[:k])
+    relevant_docs_set = set(relevant_docs)
+    return len(retrieved_docs & relevant_docs_set) / len(relevant_docs_set)
+
+def average_precision(ranked_list, relevant_docs):
+    """Computes Mean Average Precision (MAP)."""
+    num_relevant = 0
+    precision_sum = 0
+    for i, doc_id in enumerate(ranked_list):
+        if doc_id in relevant_docs:
+            num_relevant += 1
+            precision_sum += num_relevant / (i + 1)
+
+    return precision_sum / len(relevant_docs) if relevant_docs else 0
 
 # ------------------------------------- #
 # ✅ Step 6: Evaluate Queries
 # ------------------------------------- #
 
 def evaluate(queries, qrels):
-    """Evaluates ranking effectiveness using MRR and NDCG."""
-    bm25_mrr, bm25_ndcg, dense_mrr, dense_ndcg = [], [], [], []
-    x=0
-    for query_id, query_data in queries.items():
-        query_text = query_data["title"]
+    """Evaluates ranking effectiveness using MRR, nDCG, Recall, MAP, and Query Time."""
+    bm25_mrr, bm25_ndcg, bm25_recall, bm25_map = [], [], [], []
+    dense_mrr, dense_ndcg, dense_recall, dense_map = [], [], [], []
+    query_times = []
+
+    for query_id, query_text in queries.items():
         relevant_docs = qrels.get(query_id, {})
 
         if not relevant_docs:
@@ -145,33 +162,24 @@ def evaluate(queries, qrels):
 
         print(f"\n🔍 Evaluating Query {query_id}: {query_text}")
 
-        bm25_results = search_sparse(query_text, SPARSE_INDEX_PATH, top_k=10)
-        dense_results = search_dense(query_text, DENSE_INDEX_PATH, top_k=10)
+        # Measure execution time
+        bm25_results, bm25_time = search_sparse(query_text, SPARSE_INDEX_PATH, top_k=1000)
+        dense_results, dense_time = search_dense(query_text, DENSE_INDEX_PATH, top_k=1000)
 
         bm25_ranking = [doc_id for doc_id, _ in bm25_results] if bm25_results else []
         dense_ranking = [doc_id for doc_id, _ in dense_results] if dense_results else []
 
-        # Convert to binary relevance vectors
-        bm25_relevance = convert_to_relevance_vector(relevant_docs, bm25_ranking)
-        dense_relevance = convert_to_relevance_vector(relevant_docs, dense_ranking)
+        query_times.append((bm25_time + dense_time) / 2)  # Store average query time
 
-        # Compute MRR
-        if bm25_ranking:
-            bm25_mrr.append(mean_reciprocal_rank(bm25_ranking, relevant_docs))
-        if dense_ranking:
-            dense_mrr.append(mean_reciprocal_rank(dense_ranking, relevant_docs))
+        # Compute Metrics
+        bm25_mrr.append(mean_reciprocal_rank(bm25_ranking, relevant_docs))
+        bm25_ndcg.append(compute_ndcg(bm25_ranking, relevant_docs))
+        bm25_recall.append(recall_at_k(bm25_ranking, relevant_docs, k=1000))
+        bm25_map.append(average_precision(bm25_ranking, relevant_docs))
 
-        # Compute NDCG (Ensure numeric values)
-        if sum(bm25_relevance) > 0:
-            bm25_ndcg.append(ndcg_score([bm25_relevance], [list(range(len(bm25_relevance), 0, -1))]))
-        if sum(dense_relevance) > 0:
-            dense_ndcg.append(ndcg_score([dense_relevance], [list(range(len(dense_relevance), 0, -1))]))
-        x+=1
-        #if x==10:
-        #    break
     print("\n📊 **Final Evaluation Metrics**")
-    #print(f"BM25 MRR: {np.mean(bm25_mrr):.4f}, NDCG: {np.mean(bm25_ndcg) if bm25_ndcg else 0:.4f}")
-    print(f"Dense Retrieval MRR: {np.mean(dense_mrr):.4f}, NDCG: {np.mean(dense_ndcg) if dense_ndcg else 0:.4f}")
+    print(f"BM25 MRR@10: {np.mean(bm25_mrr):.4f}, nDCG@10: {np.mean(bm25_ndcg):.4f}, Recall@1k: {np.mean(bm25_recall):.4f}, MAP: {np.mean(bm25_map):.4f}")
+    print(f"📌 Average Query Execution Time: {np.mean(query_times):.4f} seconds")
 
 # Run Evaluation
 evaluate(queries, qrels)
