@@ -46,16 +46,16 @@ A repository for exploring sparse (BM25) and dense (neural) ranking techniques o
   - MAP: 0.1389  
 
 - **RRF**  
-  - MRR@10: 0.9813  
-  - nDCG@10: 0.9805  
-  - Recall@1k: 0.1304  
+  - MRR@10: 0.9780  
+  - nDCG@10: 0.9794  
+  - Recall@1k: 0.1237  
   - MAP: 0.1389  
 
 - **Cross-Encoding**  
-  - MRR@10: 0.9813  
-  - nDCG@10: 0.9805  
-  - Recall@1k: 0.1304  
-  - MAP: 0.1389  
+  - MRR@10: 0.9602  
+  - nDCG@10: 0.9732  
+  - Recall@1k: 0.0258  
+  - MAP: 0.7703  
 
 ---
 
