@@ -147,9 +147,10 @@ def evaluate(queries, qrels):
 
         sparse_results, time_sparse = search_sparse(query_text, SPARSE_INDEX_PATH, top_k=1000)
         dense_results, time_dense = search_dense(query_text, DENSE_INDEX_PATH, top_k=1000)
-        hybrid_results = reciprocal_rank_fusion([sparse_results, dense_results])
+        hybrid_results = hybrid_search(query_text, SPARSE_INDEX_PATH, top_k=1000)
         rrf_results = reciprocal_rank_fusion([sparse_results, dense_results])
-        cross_results = reciprocal_rank_fusion([sparse_results, dense_results])
+        rrf_text_results = [(doc_id, "DOCUMENT TEXT PLACEHOLDER") for doc_id, _ in rrf_results[:50]]
+        cross_results = cross_encoder_rerank(query_text, rrf_text_results)
 
         total_time += time_sparse + time_dense
         num_queries += 1
