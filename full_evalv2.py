@@ -12,7 +12,7 @@ from sklearn.metrics import ndcg_score
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 # Define paths
-QUERY_DIR = "/Users/cihad/websearch/SparseDenseRanking/query-relJudgments"
+QUERY_DIR = "C:\\Users\\asus\\PycharmProjects\\SparseDenseRanking\\query-relJudgments"
 SPARSE_INDEX_PATH = "lucene_index"
 DENSE_INDEX_PATH = "faiss_index"
 
@@ -202,6 +202,6 @@ def evaluate(queries, qrels):
         cross_mrr.append(mean_reciprocal_rank([doc for doc, _ in cross_results], relevant_docs))
 
     print("\n📊 **Final Evaluation Metrics**")
-    print(f"Sparse MRR@10: {np.mean(sparse_mrr):.4f}, Hybrid: {np.mean(hybrid_mrr):.4f}, Cross: {np.mean(cross_mrr):.4f}")
+    print(f"Sparse MRR@10: {np.mean(sparse_mrr):.4f},Dense: {np.mean(dense_mrr):.4f}, RRF: {np.mean(rrf_mrr):.4f}, Hybrid: {np.mean(hybrid_mrr):.4f}, Cross: {np.mean(cross_mrr):.4f}")
 
 evaluate(queries, qrels)
