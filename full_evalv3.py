@@ -12,7 +12,7 @@ from sklearn.metrics import ndcg_score
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 # Define paths
-QUERY_DIR = "/Users/cihad/websearch/SparseDenseRanking/query-relJudgments"
+QUERY_DIR = "C:\\Users\\asus\\PycharmProjects\\SparseDenseRanking\\query-relJudgments"
 SPARSE_INDEX_PATH = "lucene_index"
 DENSE_INDEX_PATH = "faiss_index"
 
@@ -194,10 +194,10 @@ def compute_ndcg(ranked_list, relevant_docs, k=10):
 # ✅ Step 6: Evaluate All Methods
 # ------------------------------------- #
 
-x=0 
 def evaluate(queries, qrels):
     """Evaluates BM25, Dense, Hybrid, RRF, and Cross-Encoder methods."""
     sparse_mrr, dense_mrr, hybrid_mrr, rrf_mrr, cross_mrr = [], [], [], [], []
+    x=0 
 
     for query_id, query_text in queries.items():
         relevant_docs = qrels.get(query_id, {})
@@ -219,11 +219,8 @@ def evaluate(queries, qrels):
         hybrid_mrr.append(mean_reciprocal_rank([doc for doc, _ in hybrid_results], relevant_docs))
         rrf_mrr.append(mean_reciprocal_rank([doc for doc, _ in rrf_results], relevant_docs))
         cross_mrr.append(mean_reciprocal_rank([doc for doc, _ in cross_results], relevant_docs))
-
-        x+=1
-        if x==5:
-            break
+ 
     print("\n📊 **Final Evaluation Metrics**")
-    print(f"Sparse MRR@10: {np.mean(sparse_mrr):.4f}, Hybrid: {np.mean(hybrid_mrr):.4f}, Cross: {np.mean(cross_mrr):.4f}")
+    print(f"Sparse MRR@10: {np.mean(sparse_mrr):.4f},Dense: {np.mean(dense_mrr):.4f}, RRF: {np.mean(rrf_mrr):.4f}, Hybrid: {np.mean(hybrid_mrr):.4f}, Cross: {np.mean(cross_mrr):.4f}")
 
 evaluate(queries, qrels)
