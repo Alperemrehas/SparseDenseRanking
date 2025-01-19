@@ -55,3 +55,8 @@ Dense Retrieval MRR@10: 0.9304, nDCG@10: 0.9189, Recall@1k: 0.0930, MAP: 0.0436
 
 
 
+Sparse MRR@10: 0.9785,Dense: 0.9304, RRF: 0.9813, Hybrid: 0.9780, Cross: 0.9602
+
+
+
+
