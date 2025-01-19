@@ -12,7 +12,7 @@ from sklearn.metrics import ndcg_score, average_precision_score
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 # Define paths
-QUERY_DIR = "/Users/cihad/websearch/SparseDenseRanking/query-relJudgments"
+QUERY_DIR = "C:\\Users\\asus\\PycharmProjects\\SparseDenseRanking\\query-relJudgments"
 SPARSE_INDEX_PATH = "lucene_index"
 DENSE_INDEX_PATH = "faiss_index"
 
@@ -22,7 +22,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForSequenceClassification.from_pretrained(model_name)
 
 # ---------------------- #
-#  Step 1: Parse Queries
+# ✅ Step 1: Parse Queries
 # ---------------------- #
 def parse_trec_queries(file_path):
     """Parses TREC format query files and returns a dictionary of queries."""
@@ -41,7 +41,7 @@ def parse_trec_queries(file_path):
     return queries
 
 # ------------------------------ #
-#  Step 2: Parse Relevance Judgments
+# ✅ Step 2: Parse Relevance Judgments
 # ------------------------------ #
 def parse_qrels(file_path):
     """Parses TREC relevance judgment files and returns a dictionary of query-document relevance."""
@@ -58,7 +58,7 @@ def parse_qrels(file_path):
     return qrels
 
 # ------------------------------ #
-#  Step 3: Load Queries & Judgments
+# ✅ Step 3: Load Queries & Judgments
 # ------------------------------ #
 query_files = ["q-topics-org-SET1.txt", "q-topics-org-SET2.txt", "q-topics-org-SET3.txt"]
 queries = {}
@@ -74,10 +74,10 @@ for qrel_file in qrel_files:
     if os.path.exists(file_path):
         qrels.update(parse_qrels(file_path))
 
-print(f" Loaded {len(queries)} queries and {len(qrels)} relevance judgments.")
+print(f"✅ Loaded {len(queries)} queries and {len(qrels)} relevance judgments.")
 
 # ------------------------------------- #
-#  Step 4: Define Retrieval Functions
+# ✅ Step 4: Define Retrieval Functions
 # ------------------------------------- #
 def search_sparse(query, index_path, top_k=10):
     """Performs BM25 search on the sparse index."""
@@ -105,6 +105,70 @@ def search_dense(query, index_path, model_name="sentence-transformers/all-mpnet-
 
     results = [(doc_ids[i].strip().lower(), 1 / (1 + distances[0][j])) for j, i in enumerate(indices[0])]
     return results, end_time - start_time
+def hybrid_search(query, index_path, model_name="sentence-transformers/all-MiniLM-L6-v2", top_k=10, alpha=0.5):
+    """Performs hybrid retrieval combining BM25 and vector search."""
+    sparse_results, _ = search_sparse(query, index_path, top_k=top_k)
+    dense_results, _ = search_dense(query, DENSE_INDEX_PATH, top_k=top_k)
+
+    combined_scores = {}
+    for doc_id, score in sparse_results:
+        combined_scores[doc_id] = alpha * score
+    for doc_id, score in dense_results:
+        combined_scores[doc_id] = combined_scores.get(doc_id, 0) + (1 - alpha) * score
+
+    return sorted(combined_scores.items(), key=lambda x: x[1], reverse=True)
+
+def cross_encoder_rerank(query, documents, batch_size=16):
+    """Reranks top documents using a Cross-Encoder."""
+    scores = []
+    doc_texts = []
+    doc_ids = []
+
+    for doc in documents:
+        if isinstance(doc, tuple) and len(doc) == 2:  
+            doc_id, text = doc
+        else:
+            print(f"⚠️ Skipping invalid document format: {doc}")
+            continue
+
+        if not isinstance(text, str) or not text.strip():
+            print(f"⚠️ Skipping document {doc_id}: Invalid or empty text format.")
+            continue
+
+        doc_ids.append(doc_id)
+        doc_texts.append(text)
+
+    if not doc_texts:
+        print("⚠️ No valid documents found for reranking. Returning empty list.")
+        return []  # No valid documents to rerank
+
+    # 🚨 Debugging: Print sample input
+    print(f"🔍 Cross-Encoder Query: {query}")
+    print(f"📄 First 3 Docs for Reranking: {doc_texts[:3]}")
+
+    reranked_results = []
+    for i in range(0, len(doc_texts), batch_size):
+        batch_texts = doc_texts[i:i + batch_size]
+        batch_ids = doc_ids[i:i + batch_size]
+
+        # ✅ Batch encode queries and documents
+        inputs = tokenizer.batch_encode_plus(
+            [(query, doc) for doc in batch_texts],
+            return_tensors="pt",
+            truncation=True,
+            padding=True
+        )
+
+        # ✅ Forward pass through the model
+        with torch.no_grad():
+            logits = model(**inputs).logits.squeeze(-1)
+
+        # ✅ Zip doc_ids and scores together, then sort by score (higher is better)
+        batch_results = list(zip(batch_ids, logits.tolist()))
+        reranked_results.extend(batch_results)
+
+    return sorted(reranked_results, key=lambda x: x[1], reverse=True)
+
 
 def reciprocal_rank_fusion(results_list, k=60):
     """Merges multiple ranked lists using Reciprocal Rank Fusion (RRF)."""
@@ -129,7 +193,7 @@ def compute_metrics(ranked_list, relevant_docs):
     }
 
 # ------------------------------------- #
-#  Step 5: Evaluate All Methods
+# ✅ Step 5: Evaluate All Methods
 # ------------------------------------- #
 def evaluate(queries, qrels):
     """Evaluates BM25, Dense, Hybrid, RRF, and Cross-Encoder methods."""
