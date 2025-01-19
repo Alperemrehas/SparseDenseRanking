@@ -14,7 +14,7 @@ QUERY_DIR = "C:\\Users\\asus\\PycharmProjects\\SparseDenseRanking\\query-relJudg
 DENSE_INDEX_PATH = "faiss_index"
 
 # ---------------------- #
-# ✅ Step 1: Parse Queries
+# Step 1: Parse Queries
 # ---------------------- #
 def parse_trec_queries(file_path):
     """Parses TREC format query files and returns a dictionary of queries."""
@@ -39,7 +39,7 @@ def parse_trec_queries(file_path):
     return queries
 
 # ------------------------------ #
-# ✅ Step 2: Parse Relevance Judgments
+# Step 2: Parse Relevance Judgments
 # ------------------------------ #
 def parse_qrels(file_path):
     """Parses TREC relevance judgment files and returns a dictionary of query-document relevance."""
@@ -56,7 +56,7 @@ def parse_qrels(file_path):
     return qrels
 
 # ------------------------------ #
-# ✅ Step 3: Load All Queries & Judgments
+# Step 3: Load All Queries & Judgments
 # ------------------------------ #
 query_files = [
     "q-topics-org-SET1.txt",
@@ -80,10 +80,10 @@ for qrel_file in qrel_files:
     if os.path.exists(file_path):
         qrels.update(parse_qrels(file_path))
 
-print(f"✅ Loaded {len(queries)} queries and {len(qrels)} relevance judgments.")
+print(f"Loaded {len(queries)} queries and {len(qrels)} relevance judgments.")
 
 # ------------------------------------- #
-# ✅ Step 4: Define Dense Retrieval
+# Step 4: Define Dense Retrieval
 # ------------------------------------- #
 def search_dense(query, index_path, model_name="sentence-transformers/all-mpnet-base-v2", top_k=10):
     """Performs vector similarity search on the dense FAISS index."""
@@ -103,7 +103,7 @@ def search_dense(query, index_path, model_name="sentence-transformers/all-mpnet-
     return results, execution_time
 
 # ------------------------------------- #
-# ✅ Step 5: Evaluation Metrics
+# Step 5: Evaluation Metrics
 # ------------------------------------- #
 def mean_reciprocal_rank(ranking, relevant_docs):
     """Calculates Mean Reciprocal Rank (MRR@10)."""
@@ -138,7 +138,7 @@ def average_precision(ranked_list, relevant_docs):
     return precision_sum / len(relevant_docs) if relevant_docs else 0
 
 # ------------------------------------- #
-# ✅ Step 6: Evaluate Queries
+# Step 6: Evaluate Queries
 # ------------------------------------- #
 def evaluate(queries, qrels):
     """Evaluates dense ranking effectiveness using MRR, nDCG, Recall, MAP, and Query Time."""
@@ -150,10 +150,10 @@ def evaluate(queries, qrels):
         relevant_docs = qrels.get(query_id, {})
 
         if not relevant_docs:
-            print(f"⚠️ Skipping Query {query_id}: No relevant documents found.")
+            print(f" Skipping Query {query_id}: No relevant documents found.")
             continue
 
-        print(f"\n🔍 Evaluating Query {query_id}: {query_text}")
+        print(f"\n Evaluating Query {query_id}: {query_text}")
 
         # Measure execution time
         dense_results, dense_time = search_dense(query_text, DENSE_INDEX_PATH, top_k=1000)
@@ -167,9 +167,9 @@ def evaluate(queries, qrels):
         dense_recall.append(recall_at_k(dense_ranking, relevant_docs, k=1000))
         dense_map.append(average_precision(dense_ranking, relevant_docs))
 
-    print("\n📊 **Final Evaluation Metrics**")
+    print("\n**Final Evaluation Metrics**")
     print(f"Dense Retrieval MRR@10: {np.mean(dense_mrr):.4f}, nDCG@10: {np.mean(dense_ndcg):.4f}, Recall@1k: {np.mean(dense_recall):.4f}, MAP: {np.mean(dense_map):.4f}")
-    print(f"📌 Average Query Execution Time: {np.mean(query_times):.4f} seconds")
+    print(f"Average Query Execution Time: {np.mean(query_times):.4f} seconds")
 
 # Run Evaluation
 evaluate(queries, qrels)

@@ -22,7 +22,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForSequenceClassification.from_pretrained(model_name)
 
 # ---------------------- #
-# ✅ Step 1: Parse Queries
+#  Step 1: Parse Queries
 # ---------------------- #
 def parse_trec_queries(file_path):
     """Parses TREC format query files and returns a dictionary of queries."""
@@ -41,7 +41,7 @@ def parse_trec_queries(file_path):
     return queries
 
 # ------------------------------ #
-# ✅ Step 2: Parse Relevance Judgments
+#  Step 2: Parse Relevance Judgments
 # ------------------------------ #
 def parse_qrels(file_path):
     """Parses TREC relevance judgment files and returns a dictionary of query-document relevance."""
@@ -58,7 +58,7 @@ def parse_qrels(file_path):
     return qrels
 
 # ------------------------------ #
-# ✅ Step 3: Load Queries & Judgments
+#  Step 3: Load Queries & Judgments
 # ------------------------------ #
 query_files = ["q-topics-org-SET1.txt", "q-topics-org-SET2.txt", "q-topics-org-SET3.txt"]
 queries = {}
@@ -74,10 +74,10 @@ for qrel_file in qrel_files:
     if os.path.exists(file_path):
         qrels.update(parse_qrels(file_path))
 
-print(f"✅ Loaded {len(queries)} queries and {len(qrels)} relevance judgments.")
+print(f" Loaded {len(queries)} queries and {len(qrels)} relevance judgments.")
 
 # ------------------------------------- #
-# ✅ Step 4: Define Retrieval Functions
+#  Step 4: Define Retrieval Functions
 # ------------------------------------- #
 def search_sparse(query, index_path, top_k=10):
     """Performs BM25 search on the sparse index."""
@@ -129,7 +129,7 @@ def compute_metrics(ranked_list, relevant_docs):
     }
 
 # ------------------------------------- #
-# ✅ Step 5: Evaluate All Methods
+#  Step 5: Evaluate All Methods
 # ------------------------------------- #
 def evaluate(queries, qrels):
     """Evaluates BM25, Dense, Hybrid, RRF, and Cross-Encoder methods."""
@@ -140,10 +140,10 @@ def evaluate(queries, qrels):
     for query_id, query_text in queries.items():
         relevant_docs = qrels.get(query_id, {})
         if not relevant_docs:
-            print(f"⚠️ Skipping Query {query_id}: No relevant documents found.")
+            print(f" Skipping Query {query_id}: No relevant documents found.")
             continue
 
-        print(f"\n🔍 Evaluating Query {query_id}: {query_text}")
+        print(f"\n Evaluating Query {query_id}: {query_text}")
 
         sparse_results, time_sparse = search_sparse(query_text, SPARSE_INDEX_PATH, top_k=1000)
         dense_results, time_dense = search_dense(query_text, DENSE_INDEX_PATH, top_k=1000)
@@ -162,7 +162,7 @@ def evaluate(queries, qrels):
 
     avg_time = total_time / num_queries if num_queries > 0 else 0
 
-    print("\n📊 **Final Evaluation Metrics**")
+    print("\n **Final Evaluation Metrics**")
     for method, values in metrics.items():
         print(f"{method} - MRR@10: {np.mean([m['MRR@10'] for m in values]):.4f}, "
               f"nDCG@10: {np.mean([m['nDCG@10'] for m in values]):.4f}, "

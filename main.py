@@ -36,7 +36,7 @@ def create_sparse_index(documents, index_path):
         for doc_id, text in documents.items():
             f.write(json.dumps({"id": doc_id, "contents": text}) + "\n")
 
-    print("🔄 Starting Sparse Indexing...")
+    print(" Starting Sparse Indexing...")
     start_time = time.time()
 
     # Run Pyserini indexing command
@@ -52,7 +52,7 @@ def create_sparse_index(documents, index_path):
     
     subprocess.run(command, check=True)
     end_time = time.time()
-    print(f"✅ Sparse index created in {end_time - start_time:.2f} seconds!")
+    print(f" Sparse index created in {end_time - start_time:.2f} seconds!")
 
 # Run sparse indexing
 create_sparse_index(documents, SPARSE_INDEX_PATH)
@@ -64,7 +64,7 @@ def create_dense_index(documents, index_path, model_name="sentence-transformers/
     embeddings = []
     doc_ids = list(documents.keys())
 
-    print(f"🔄 Generating embeddings using {model_name}...")
+    print(f" Generating embeddings using {model_name}...")
     start_time = time.time()
 
     for doc_id in tqdm(doc_ids, desc="Encoding Documents"):
@@ -82,7 +82,7 @@ def create_dense_index(documents, index_path, model_name="sentence-transformers/
     np.save(index_path + "_doc_ids.npy", np.array(doc_ids))
 
     end_time = time.time()
-    print(f"✅ Dense index created in {end_time - start_time:.2f} seconds!")
+    print(f" Dense index created in {end_time - start_time:.2f} seconds!")
 
 # Run dense indexing
 create_dense_index(documents, DENSE_INDEX_PATH)
@@ -97,7 +97,7 @@ def search_sparse(query, index_path, top_k=10):
     hits = searcher.search(query, k=top_k)
     end_time = time.time()
 
-    print(f"⏳ BM25 Query Execution Time: {end_time - start_time:.4f} seconds")
+    print(f" BM25 Query Execution Time: {end_time - start_time:.4f} seconds")
     return [(hit.docid, hit.score) for hit in hits]
 
 def search_dense(query, index_path, model_name="sentence-transformers/all-mpnet-base-v2", top_k=10):
@@ -112,7 +112,7 @@ def search_dense(query, index_path, model_name="sentence-transformers/all-mpnet-
     distances, indices = index.search(query_embedding, top_k)
     end_time = time.time()
 
-    print(f"⏳ Dense Query Execution Time: {end_time - start_time:.4f} seconds")
+    print(f" Dense Query Execution Time: {end_time - start_time:.4f} seconds")
     results = [(doc_ids[i], 1 / (1 + distances[0][j])) for j, i in enumerate(indices[0])]
     return results
 
@@ -133,7 +133,7 @@ def evaluate(queries, ground_truth):
     bm25_mrr, bm25_ndcg, dense_mrr, dense_ndcg = [], [], [], []
     
     for query, relevant_docs in queries.items():
-        print(f"\n🔍 Evaluating Query: {query}")
+        print(f"\n Evaluating Query: {query}")
 
         bm25_results = search_sparse(query, SPARSE_INDEX_PATH, top_k=10)
         dense_results = search_dense(query, DENSE_INDEX_PATH, top_k=10)
@@ -154,7 +154,7 @@ def evaluate(queries, ground_truth):
         bm25_ndcg.append(ndcg_score([bm25_relevance], [list(range(len(bm25_ranking), 0, -1))]))
         dense_ndcg.append(ndcg_score([dense_relevance], [list(range(len(dense_ranking), 0, -1))]))
 
-    print("\n📊 **Final Evaluation Metrics**")
+    print("\n **Final Evaluation Metrics**")
     print(f"BM25 MRR: {np.mean(bm25_mrr):.4f}, NDCG: {np.mean(bm25_ndcg):.4f}")
     print(f"Dense Retrieval MRR: {np.mean(dense_mrr):.4f}, NDCG: {np.mean(dense_ndcg):.4f}")
 

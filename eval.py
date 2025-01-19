@@ -16,7 +16,7 @@ SPARSE_INDEX_PATH = "lucene_index"
 DENSE_INDEX_PATH = "faiss_index"
 
 # ---------------------- #
-# ✅ Step 1: Parse Queries 
+# Step 1: Parse Queries 
 # ---------------------- #
 def parse_trec_queries(file_path):
     """
@@ -44,7 +44,7 @@ def parse_trec_queries(file_path):
     return queries
 
 # ------------------------------ #
-# ✅ Step 2: Parse Relevance Judgments
+# Step 2: Parse Relevance Judgments
 # ------------------------------ #
 def parse_qrels(file_path):
     """
@@ -64,7 +64,7 @@ def parse_qrels(file_path):
     return qrels
 
 # ------------------------------ #
-# ✅ Step 3: Load All Queries & Judgments
+# Step 3: Load All Queries & Judgments
 # ------------------------------ #
 query_files = [
     "q-topics-org-SET1.txt",
@@ -88,10 +88,10 @@ for qrel_file in qrel_files:
     if os.path.exists(file_path):
         qrels.update(parse_qrels(file_path))
 
-print(f"✅ Loaded {len(queries)} queries and {len(qrels)} relevance judgments.")
+print(f"Loaded {len(queries)} queries and {len(qrels)} relevance judgments.")
 
 # ------------------------------------- #
-# ✅ Step 4: Define Retrieval Functions
+# Step 4: Define Retrieval Functions
 # ------------------------------------- #
 def search_sparse(query, index_path, top_k=10):
     """Performs BM25 search on the sparse index."""
@@ -114,7 +114,7 @@ def search_dense(query, index_path, model_name="sentence-transformers/all-mpnet-
     return results
 
 # ------------------------------------- #
-# ✅ Step 5: Evaluation Metrics
+# Step 5: Evaluation Metrics
 # ------------------------------------- #
 def mean_reciprocal_rank(ranking, relevant_docs):
     """Calculates Mean Reciprocal Rank (MRR)."""
@@ -128,7 +128,7 @@ def convert_to_relevance_vector(relevant_docs, ranking):
     return [1 if doc_id in relevant_docs else 0 for doc_id in ranking]
 
 # ------------------------------------- #
-# ✅ Step 6: Evaluate Queries
+# Step 6: Evaluate Queries
 # ------------------------------------- #
 
 def evaluate(queries, qrels):
@@ -140,10 +140,10 @@ def evaluate(queries, qrels):
         relevant_docs = qrels.get(query_id, {})
 
         if not relevant_docs:
-            print(f"⚠️ Skipping Query {query_id}: No relevant documents found.")
+            print(f" Skipping Query {query_id}: No relevant documents found.")
             continue
 
-        print(f"\n🔍 Evaluating Query {query_id}: {query_text}")
+        print(f"\n Evaluating Query {query_id}: {query_text}")
 
         bm25_results = search_sparse(query_text, SPARSE_INDEX_PATH, top_k=10)
       #  dense_results = search_dense(query_text, DENSE_INDEX_PATH, top_k=10)
@@ -169,7 +169,7 @@ def evaluate(queries, qrels):
      #   x+=1
      #   if x==100:   
      #       break
-    print("\n📊 **Final Evaluation Metrics**")
+    print("\n **Final Evaluation Metrics**")
     print(f"BM25 MRR: {np.mean(bm25_mrr):.4f}, NDCG: {np.mean(bm25_ndcg) if bm25_ndcg else 0:.4f}")
    # print(f"Dense Retrieval MRR: {np.mean(dense_mrr):.4f}, NDCG: {np.mean(dense_ndcg) if dense_ndcg else 0:.4f}")
 

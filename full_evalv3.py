@@ -22,7 +22,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForSequenceClassification.from_pretrained(model_name)
 
 # ---------------------- #
-# ✅ Step 1: Parse Queries
+# Step 1: Parse Queries
 # ---------------------- #
 def parse_trec_queries(file_path):
     """Parses TREC format query files and returns a dictionary of queries."""
@@ -41,7 +41,7 @@ def parse_trec_queries(file_path):
     return queries
 
 # ------------------------------ #
-# ✅ Step 2: Parse Relevance Judgments
+# Step 2: Parse Relevance Judgments
 # ------------------------------ #
 def parse_qrels(file_path):
     """Parses TREC relevance judgment files and returns a dictionary of query-document relevance."""
@@ -58,7 +58,7 @@ def parse_qrels(file_path):
     return qrels
 
 # ------------------------------ #
-# ✅ Step 3: Load Queries & Judgments
+# Step 3: Load Queries & Judgments
 # ------------------------------ #
 query_files = ["q-topics-org-SET1.txt", "q-topics-org-SET2.txt", "q-topics-org-SET3.txt"]
 queries = {}
@@ -74,10 +74,10 @@ for qrel_file in qrel_files:
     if os.path.exists(file_path):
         qrels.update(parse_qrels(file_path))
 
-print(f"✅ Loaded {len(queries)} queries and {len(qrels)} relevance judgments.")
+print(f"Loaded {len(queries)} queries and {len(qrels)} relevance judgments.")
 
 # ------------------------------------- #
-# ✅ Step 4: Define Retrieval Functions
+# Step 4: Define Retrieval Functions
 # ------------------------------------- #
 def search_sparse(query, index_path, top_k=10):
     """Performs BM25 search on the sparse index."""
@@ -124,30 +124,30 @@ def cross_encoder_rerank(query, documents, batch_size=16):
         if isinstance(doc, tuple) and len(doc) == 2:  
             doc_id, text = doc
         else:
-            print(f"⚠️ Skipping invalid document format: {doc}")
+            print(f"Skipping invalid document format: {doc}")
             continue
 
         if not isinstance(text, str) or not text.strip():
-            print(f"⚠️ Skipping document {doc_id}: Invalid or empty text format.")
+            print(f"Skipping document {doc_id}: Invalid or empty text format.")
             continue
 
         doc_ids.append(doc_id)
         doc_texts.append(text)
 
     if not doc_texts:
-        print("⚠️ No valid documents found for reranking. Returning empty list.")
+        print("No valid documents found for reranking. Returning empty list.")
         return []  # No valid documents to rerank
 
-    # 🚨 Debugging: Print sample input
-    print(f"🔍 Cross-Encoder Query: {query}")
-    print(f"📄 First 3 Docs for Reranking: {doc_texts[:3]}")
+    # Debugging: Print sample input
+    print(f" Cross-Encoder Query: {query}")
+    print(f" First 3 Docs for Reranking: {doc_texts[:3]}")
 
     reranked_results = []
     for i in range(0, len(doc_texts), batch_size):
         batch_texts = doc_texts[i:i + batch_size]
         batch_ids = doc_ids[i:i + batch_size]
 
-        # ✅ Batch encode queries and documents
+        #  Batch encode queries and documents
         inputs = tokenizer.batch_encode_plus(
             [(query, doc) for doc in batch_texts],
             return_tensors="pt",
@@ -155,11 +155,11 @@ def cross_encoder_rerank(query, documents, batch_size=16):
             padding=True
         )
 
-        # ✅ Forward pass through the model
+        #  Forward pass through the model
         with torch.no_grad():
             logits = model(**inputs).logits.squeeze(-1)
 
-        # ✅ Zip doc_ids and scores together, then sort by score (higher is better)
+        #  Zip doc_ids and scores together, then sort by score (higher is better)
         batch_results = list(zip(batch_ids, logits.tolist()))
         reranked_results.extend(batch_results)
 
@@ -178,7 +178,7 @@ def hybrid_search(query, index_path, model_name="sentence-transformers/all-MiniL
 
     return sorted(combined_scores.items(), key=lambda x: x[1], reverse=True)
 # ------------------------------------- #
-# ✅ Step 5: Evaluation Metrics
+#  Step 5: Evaluation Metrics
 # ------------------------------------- #
 def mean_reciprocal_rank(ranking, relevant_docs):
     for i, doc_id in enumerate(ranking[:10]):
@@ -191,7 +191,7 @@ def compute_ndcg(ranked_list, relevant_docs, k=10):
     return ndcg_score([relevance], [list(range(len(relevance), 0, -1))]) if sum(relevance) > 0 else 0
 
 # ------------------------------------- #
-# ✅ Step 6: Evaluate All Methods
+#  Step 6: Evaluate All Methods
 # ------------------------------------- #
 
 def evaluate(queries, qrels):
@@ -202,10 +202,10 @@ def evaluate(queries, qrels):
     for query_id, query_text in queries.items():
         relevant_docs = qrels.get(query_id, {})
         if not relevant_docs:
-            print(f"⚠️ Skipping Query {query_id}: No relevant documents found.")
+            print(f" Skipping Query {query_id}: No relevant documents found.")
             continue
 
-        print(f"\n🔍 Evaluating Query {query_id}: {query_text}")
+        print(f"\n Evaluating Query {query_id}: {query_text}")
 
         sparse_results, _ = search_sparse(query_text, SPARSE_INDEX_PATH, top_k=1000)
         dense_results, _ = search_dense(query_text, DENSE_INDEX_PATH, top_k=1000)
@@ -220,7 +220,7 @@ def evaluate(queries, qrels):
         rrf_mrr.append(mean_reciprocal_rank([doc for doc, _ in rrf_results], relevant_docs))
         cross_mrr.append(mean_reciprocal_rank([doc for doc, _ in cross_results], relevant_docs))
  
-    print("\n📊 **Final Evaluation Metrics**")
+    print("\n **Final Evaluation Metrics**")
     print(f"Sparse MRR@10: {np.mean(sparse_mrr):.4f},Dense: {np.mean(dense_mrr):.4f}, RRF: {np.mean(rrf_mrr):.4f}, Hybrid: {np.mean(hybrid_mrr):.4f}, Cross: {np.mean(cross_mrr):.4f}")
 
 evaluate(queries, qrels)
