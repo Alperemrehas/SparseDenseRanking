@@ -1,6 +1,6 @@
 # SparseDenseRanking
 
-A repository for exploring sparse (BM25) and dense (neural) ranking techniques over Istella22 and Financial Times datasets.
+A repository for exploring sparse (BM25) and dense (neural) ranking techniques over Financial Times datasets.
 
 ---
 
