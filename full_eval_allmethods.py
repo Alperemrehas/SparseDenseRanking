@@ -169,6 +169,6 @@ def evaluate(queries, qrels):
               f"Recall@1k: {np.mean([m['Recall@1k'] for m in values]):.4f}, "
               f"MAP: {np.mean([m['MAP'] for m in values]):.4f}")
     
-    print(f"📌 Average Query Execution Time: {avg_time:.4f} seconds")
+    print(f" Average Query Execution Time: {avg_time:.4f} seconds")
 
 evaluate(queries, qrels)
