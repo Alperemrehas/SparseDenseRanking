@@ -114,22 +114,53 @@ def reciprocal_rank_fusion(results_list, k=60):
             fused_scores[doc_id] = fused_scores.get(doc_id, 0) + 1 / (k + rank + 1)
     return sorted(fused_scores.items(), key=lambda x: x[1], reverse=True)
 
-def cross_encoder_rerank(query, documents):
+def cross_encoder_rerank(query, documents, batch_size=16):
     """Reranks top documents using a Cross-Encoder."""
     scores = []
+    doc_texts = []
+    doc_ids = []
+
     for doc_id, text in documents:
         if isinstance(text, tuple):  
             text = text[1]  # Extract actual document content
 
-        if not isinstance(text, str):
-            print(f"⚠️ Skipping document {doc_id}: Invalid text format.")
+        if not isinstance(text, str) or not text.strip():
+            print(f"⚠️ Skipping document {doc_id}: Invalid or empty text format.")
             continue
 
-        inputs = tokenizer(query, text, return_tensors="pt", truncation=True, padding=True)
-        logits = model(**inputs).logits
-        scores.append((doc_id, logits.item()))
-    return sorted(scores, key=lambda x: x[1], reverse=True)
+        doc_ids.append(doc_id)
+        doc_texts.append(text)
 
+    if not doc_texts:
+        return []  # No valid documents to rerank
+
+    # ✅ Batch encode queries and documents
+    inputs = tokenizer.batch_encode_plus(
+        [(query, doc) for doc in doc_texts],
+        return_tensors="pt",
+        truncation=True,
+        padding=True
+    )
+
+    # ✅ Forward pass through the model
+    with torch.no_grad():
+        logits = model(**inputs).logits.squeeze(-1)
+
+    # ✅ Zip doc_ids and scores together, then sort by score (higher is better)
+    scores = list(zip(doc_ids, logits.tolist()))
+    return sorted(scores, key=lambda x: x[1], reverse=True)
+def hybrid_search(query, index_path, model_name="sentence-transformers/all-MiniLM-L6-v2", top_k=10, alpha=0.5):
+    """Performs hybrid retrieval combining BM25 and vector search."""
+    sparse_results, _ = search_sparse(query, index_path, top_k=top_k)
+    dense_results, _ = search_dense(query, DENSE_INDEX_PATH, top_k=top_k)
+
+    combined_scores = {}
+    for doc_id, score in sparse_results:
+        combined_scores[doc_id] = alpha * score
+    for doc_id, score in dense_results:
+        combined_scores[doc_id] = combined_scores.get(doc_id, 0) + (1 - alpha) * score
+
+    return sorted(combined_scores.items(), key=lambda x: x[1], reverse=True)
 # ------------------------------------- #
 # ✅ Step 5: Evaluation Metrics
 # ------------------------------------- #
@@ -147,9 +178,8 @@ def compute_ndcg(ranked_list, relevant_docs, k=10):
 # ✅ Step 6: Evaluate All Methods
 # ------------------------------------- #
 def evaluate(queries, qrels):
-    """Evaluates BM25, Dense, and Cross-Encoder methods."""
-    sparse_mrr, dense_mrr, cross_mrr = [], [], []
-    sparse_times, dense_times = [], []
+    """Evaluates BM25, Dense, Hybrid, RRF, and Cross-Encoder methods."""
+    sparse_mrr, dense_mrr, hybrid_mrr, rrf_mrr, cross_mrr = [], [], [], [], []
 
     for query_id, query_text in queries.items():
         relevant_docs = qrels.get(query_id, {})
@@ -159,22 +189,19 @@ def evaluate(queries, qrels):
 
         print(f"\n🔍 Evaluating Query {query_id}: {query_text}")
 
-        sparse_results, sparse_time = search_sparse(query_text, SPARSE_INDEX_PATH, top_k=1000)
-        dense_results, dense_time = search_dense(query_text, DENSE_INDEX_PATH, top_k=1000)
+        sparse_results, _ = search_sparse(query_text, SPARSE_INDEX_PATH, top_k=1000)
+        dense_results, _ = search_dense(query_text, DENSE_INDEX_PATH, top_k=1000)
+        hybrid_results = hybrid_search(query_text, SPARSE_INDEX_PATH, top_k=1000)
+        rrf_results = reciprocal_rank_fusion([sparse_results, dense_results])
+        cross_results = cross_encoder_rerank(query_text, rrf_results[:50])
 
-        sparse_ranking = [doc_id for doc_id, _ in sparse_results]
-        dense_ranking = [doc_id for doc_id, _ in dense_results]
-
-        sparse_times.append(sparse_time)
-        dense_times.append(dense_time)
-
-        cross_results = cross_encoder_rerank(query_text, sparse_results[:50])  
-
-        sparse_mrr.append(mean_reciprocal_rank(sparse_ranking, relevant_docs))
-        dense_mrr.append(mean_reciprocal_rank(dense_ranking, relevant_docs))
-        cross_mrr.append(mean_reciprocal_rank([doc_id for doc_id, _ in cross_results], relevant_docs))
+        sparse_mrr.append(mean_reciprocal_rank([doc for doc, _ in sparse_results], relevant_docs))
+        dense_mrr.append(mean_reciprocal_rank([doc for doc, _ in dense_results], relevant_docs))
+        hybrid_mrr.append(mean_reciprocal_rank([doc for doc, _ in hybrid_results], relevant_docs))
+        rrf_mrr.append(mean_reciprocal_rank([doc for doc, _ in rrf_results], relevant_docs))
+        cross_mrr.append(mean_reciprocal_rank([doc for doc, _ in cross_results], relevant_docs))
 
     print("\n📊 **Final Evaluation Metrics**")
-    print(f"Sparse MRR@10: {np.mean(sparse_mrr):.4f}, Dense MRR@10: {np.mean(dense_mrr):.4f}, Cross MRR@10: {np.mean(cross_mrr):.4f}")
+    print(f"Sparse MRR@10: {np.mean(sparse_mrr):.4f}, Hybrid: {np.mean(hybrid_mrr):.4f}, Cross: {np.mean(cross_mrr):.4f}")
 
 evaluate(queries, qrels)
