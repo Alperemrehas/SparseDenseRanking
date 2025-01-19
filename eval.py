@@ -11,12 +11,12 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics import ndcg_score
 
 # Define paths
-QUERY_DIR = "/Users/cihad/websearch/SparseDenseRanking/query-relJudgments"
+QUERY_DIR = "C:\\Users\\asus\\PycharmProjects\\SparseDenseRanking\\query-relJudgments"
 SPARSE_INDEX_PATH = "lucene_index"
 DENSE_INDEX_PATH = "faiss_index"
 
 # ---------------------- #
-# ✅ Step 1: Parse Queries
+# ✅ Step 1: Parse Queries 
 # ---------------------- #
 def parse_trec_queries(file_path):
     """
@@ -167,7 +167,7 @@ def evaluate(queries, qrels):
      #   if sum(dense_relevance) > 0:
      #       dense_ndcg.append(ndcg_score([dense_relevance], [list(range(len(dense_relevance), 0, -1))]))
      #   x+=1
-     #   if x==100:
+     #   if x==100:   
      #       break
     print("\n📊 **Final Evaluation Metrics**")
     print(f"BM25 MRR: {np.mean(bm25_mrr):.4f}, NDCG: {np.mean(bm25_ndcg) if bm25_ndcg else 0:.4f}")
