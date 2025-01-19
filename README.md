@@ -1,71 +1,158 @@
-# SparseDenseRanking# SparseDenseRanking
+# SparseDenseRanking
 
 A repository for exploring sparse (BM25) and dense (neural) ranking techniques over Istella22 and Financial Times datasets.
 
+---
+
 ## Features
-- Sparse and dense index creation using Lucene and neural models
-- Evaluation of ranking effectiveness (e.g., NDCG, precision, recall)
-- Support for Learning-to-Rank (LTR) models
+- Sparse and dense index creation using Lucene and neural models.
+- Evaluation of ranking effectiveness using metrics like MRR, NDCG, Recall, and MAP.
+- Combined approaches, including Reciprocal Rank Fusion (RRF) and Cross-Encoding.
+- Utilities for query evaluation and relevance scoring.
+
+---
 
 ## Setup
-1. Clone the repository.
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-repo/SparseDenseRanking.git
+   cd SparseDenseRanking
+   ```
 2. Install dependencies:
    ```bash
    pip install -r requirements.txt
+   ```
 
+---
 
+## Results
+### Final Evaluation Metrics
+- **Sparse**  
+  - MRR@10: 0.9785  
+  - nDCG@10: 0.9760  
+  - Recall@1k: 0.1211  
+  - MAP: 0.2543  
 
-allmethods.py —> includes  all base functions 
-sparsesearcher.py --> includes sparse search query
-dense_index_search.py —> includes dense index and dense search
-Sparsedensecolab includes fais index creation and search 
-combined_methods.py updated version of all methods
-eval.py to evaluate searchers
-eval_with_metrics.py added with many metrics
- 
+- **Dense**  
+  - MRR@10: 0.9304  
+  - nDCG@10: 0.9189  
+  - Recall@1k: 0.0930  
+  - MAP: 0.1422  
 
-Dataset info :Sparse index :2025-01-19 02:55:21,208 INFO  [main] index.AbstractIndexer (AbstractIndexer.java:307) - Indexing Complete! 210,167 documents indexed
-2025-01-19 02:55:21,209 INFO  [main] index.AbstractIndexer (AbstractIndexer.java:308) - ============ Final Counter Values ============
-2025-01-19 02:55:21,209 INFO  [main] index.AbstractIndexer (AbstractIndexer.java:309) - indexed:          210,167
-2025-01-19 02:55:21,209 INFO  [main] index.AbstractIndexer (AbstractIndexer.java:310) - unindexable:            0
-2025-01-19 02:55:21,209 INFO  [main] index.AbstractIndexer (AbstractIndexer.java:311) - empty:                  0
-2025-01-19 02:55:21,209 INFO  [main] index.AbstractIndexer (AbstractIndexer.java:312) - skipped:                0
-2025-01-19 02:55:21,209 INFO  [main] index.AbstractIndexer (AbstractIndexer.java:313) - errors:                 0
-2025-01-19 02:55:21,213 INFO  [main] index.AbstractIndexer (AbstractIndexer.java:316) - Total 210,167 documents indexed in 00:00:47
- Sparse index created in 49.14 seconds!
+- **Hybrid**  
+  - MRR@10: 0.9813  
+  - nDCG@10: 0.9805  
+  - Recall@1k: 0.1304  
+  - MAP: 0.1389  
 
-Dense index:Encoding Documents: 100%|██████████| 6568/6568 [1:30:08<00:00,  1.21it/s]
-model_name="sentence-transformers/all-mpnet-base-v2"
+- **RRF**  
+  - MRR@10: 0.9813  
+  - nDCG@10: 0.9805  
+  - Recall@1k: 0.1304  
+  - MAP: 0.1389  
 
-Sparse search   :
- **Final Evaluation Metrics**
-BM25 MRR: 0.9785, NDCG: 0.9825
+- **Cross-Encoding**  
+  - MRR@10: 0.9813  
+  - nDCG@10: 0.9805  
+  - Recall@1k: 0.1304  
+  - MAP: 0.1389  
 
- **Final Evaluation Metrics**
-BM25 MRR@10: 0.9785, nDCG@10: 0.9760, Recall@1k: 0.1211, MAP: 0.0795
-📌 Average Query Execution Time: 0.0974 seconds
+---
 
-Dense Search: **Final Evaluation Metrics**
-Dense Retrieval MRR: 0.9304, NDCG: 0.9377
+### Dataset and Index Information
+- **Sparse Index**  
+  - Created using Lucene with 210,167 documents indexed in 49.14 seconds.  
+  - BM25 Query Execution Time: 0.0974 seconds.  
 
+- **Dense Index**  
+  - Generated using `sentence-transformers/all-mpnet-base-v2` with FAISS.  
+  - Query Execution Time: 0.0379 seconds.  
 
- **Final Evaluation Metrics**
-Dense Retrieval MRR@10: 0.9304, nDCG@10: 0.9189, Recall@1k: 0.0930, MAP: 0.0436
-📌 Average Query Execution Time: 0.0379 seconds
+For sparse and dense index files, refer to [Google Drive](https://drive.google.com/drive/folders/1K9tUrY1xf-NgiPQEy6Xk--DBRMbtk9jc?usp=drive_link).
 
+---
 
+## Code Overview
+### Key Modules
+1. **`allmethods.py`**
+   - **Purpose:** Contains base functions for loading datasets, creating sparse and dense indexes, querying, and evaluation.
+   - **Highlights:**
+     - Sparse index creation using Lucene (`create_sparse_index`).
+     - Dense index creation with FAISS and SBERT embeddings (`create_dense_index`).
+     - Ranking evaluation using MRR and NDCG metrics.
 
-Sparse MRR@10: 0.9785,Dense: 0.9304, RRF: 0.9813, Hybrid: 0.9780, Cross: 0.9602
+2. **`combined_methods.py`**
+   - **Purpose:** Provides methods for parsing datasets and combining sparse and dense retrieval methods.
+   - **Highlights:**
+     - Hybrid retrieval techniques like Reciprocal Rank Fusion (RRF).
+     - FAISS and Pyserini integrations for combined search.
 
+3. **`dense_index_search.py`**
+   - **Purpose:** Handles dense index creation and search functionality.
+   - **Highlights:**
+     - Document encoding with `sentence-transformers`.
+     - Query execution using FAISS for dense vector similarity.
 
+4. **`eval_dense.py`**
+   - **Purpose:** Evaluates dense retrieval methods.
+   - **Highlights:**
+     - Metric calculation for NDCG, MRR, Recall@k, and MAP.
+     - TREC-style query and relevance judgment parsing.
 
+5. **`eval_sparse_with_diffrentmetrics.py`**
+   - **Purpose:** Evaluates sparse retrieval with multiple metrics.
+   - **Highlights:**
+     - Query relevance scoring using BM25.
+     - Advanced evaluation metrics implementation.
 
-📊 **Final Evaluation Metrics**
-Sparse - MRR@10: 0.9785, nDCG@10: 0.9760, Recall@1k: 0.1211, MAP: 0.2543
-Dense - MRR@10: 0.9304, nDCG@10: 0.9189, Recall@1k: 0.0930, MAP: 0.1422
-Hybrid - MRR@10: 0.9813, nDCG@10: 0.9805, Recall@1k: 0.1304, MAP: 0.1389
-RRF - MRR@10: 0.9813, nDCG@10: 0.9805, Recall@1k: 0.1304, MAP: 0.1389
-Cross - MRR@10: 0.9813, nDCG@10: 0.9805, Recall@1k: 0.1304, MAP: 0.1389
+6. **`eval_with_mrr_sparse.py`**
+   - **Purpose:** Evaluates sparse retrieval focusing on MRR.
+   - **Highlights:**
+     - Customized relevance vector conversion and ranking.
 
+7. **`full_eval_allmethods.py`**
+   - **Purpose:** Comprehensive evaluation across sparse, dense, hybrid, and cross-encoder methods.
+   - **Highlights:**
+     - Integration of Cross-Encoder ranking for fine-grained results.
+     - RRF and hybrid search evaluations.
 
+8. **`full_eval_sparse_densev1.py`**
+   - **Purpose:** Variant of evaluation for sparse and dense retrieval methods.
+   - **Highlights:**
+     - Comparative metrics for sparse and dense indexes.
+     - Hybrid retrieval combining BM25 and dense embeddings.
 
+9. **`full_evalv3.py`**
+   - **Purpose:** Final version of evaluation with optimized metrics.
+   - **Highlights:**
+     - Improved query execution pipeline.
+     - Full implementation of cross-encoder reranking.
+
+---
+
+## Directory Structure
+```
+SparseDenseRanking/
+├── README.md
+├── allmethods.py
+├── combined_methods.py
+├── dense_index_search.py
+├── eval_dense.py
+├── eval_sparse_with_diffrentmetrics.py
+├── eval_with_mrr_sparse.py
+├── full_eval_allmethods.py
+├── full_eval_sparse_densev1.py
+├── full_evalv3.py
+└── requirements.txt
+```
+
+---
+
+## Contact
+- **Cihad Tekinbaş**  
+  Middle East Technical University  
+  [cihad@metu.edu.tr](mailto:cihad@metu.edu.tr)  
+
+- **Alper Emre Has**  
+  Middle East Technical University  
+  [alper.has@metu.edu.tr](mailto:alper.has@metu.edu.tr)
