@@ -22,7 +22,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForSequenceClassification.from_pretrained(model_name)
 
 # ---------------------- #
-# ✅ Step 1: Parse Queries
+# Step 1: Parse Queries
 # ---------------------- #
 def parse_trec_queries(file_path):
     """Parses TREC format query files and returns a dictionary of queries."""
@@ -41,7 +41,7 @@ def parse_trec_queries(file_path):
     return queries
 
 # ------------------------------ #
-# ✅ Step 2: Parse Relevance Judgments
+#  Step 2: Parse Relevance Judgments
 # ------------------------------ #
 def parse_qrels(file_path):
     """Parses TREC relevance judgment files and returns a dictionary of query-document relevance."""
@@ -58,7 +58,7 @@ def parse_qrels(file_path):
     return qrels
 
 # ------------------------------ #
-# ✅ Step 3: Load Queries & Judgments
+#  Step 3: Load Queries & Judgments
 # ------------------------------ #
 query_files = ["q-topics-org-SET1.txt", "q-topics-org-SET2.txt", "q-topics-org-SET3.txt"]
 queries = {}
@@ -74,10 +74,10 @@ for qrel_file in qrel_files:
     if os.path.exists(file_path):
         qrels.update(parse_qrels(file_path))
 
-print(f"✅ Loaded {len(queries)} queries and {len(qrels)} relevance judgments.")
+print(f"Loaded {len(queries)} queries and {len(qrels)} relevance judgments.")
 
 # ------------------------------------- #
-# ✅ Step 4: Define Retrieval Functions
+# Step 4: Define Retrieval Functions
 # ------------------------------------- #
 def search_sparse(query, index_path, top_k=10):
     """Performs BM25 search on the sparse index."""
@@ -142,7 +142,7 @@ def cross_encoder_rerank(query, documents, batch_size=16):
         print("⚠️ No valid documents found for reranking. Returning empty list.")
         return []  # No valid documents to rerank
 
-    # 🚨 Debugging: Print sample input
+    #  Debugging: Print sample input
     print(f"🔍 Cross-Encoder Query: {query}")
     print(f"📄 First 3 Docs for Reranking: {doc_texts[:3]}")
 
@@ -151,7 +151,7 @@ def cross_encoder_rerank(query, documents, batch_size=16):
         batch_texts = doc_texts[i:i + batch_size]
         batch_ids = doc_ids[i:i + batch_size]
 
-        # ✅ Batch encode queries and documents
+        #  Batch encode queries and documents
         inputs = tokenizer.batch_encode_plus(
             [(query, doc) for doc in batch_texts],
             return_tensors="pt",
@@ -159,11 +159,11 @@ def cross_encoder_rerank(query, documents, batch_size=16):
             padding=True
         )
 
-        # ✅ Forward pass through the model
+        #  Forward pass through the model
         with torch.no_grad():
             logits = model(**inputs).logits.squeeze(-1)
 
-        # ✅ Zip doc_ids and scores together, then sort by score (higher is better)
+        # Zip doc_ids and scores together, then sort by score (higher is better)
         batch_results = list(zip(batch_ids, logits.tolist()))
         reranked_results.extend(batch_results)
 
@@ -193,7 +193,7 @@ def compute_metrics(ranked_list, relevant_docs):
     }
 
 # ------------------------------------- #
-# ✅ Step 5: Evaluate All Methods
+# Step 5: Evaluate All Methods
 # ------------------------------------- #
 def evaluate(queries, qrels):
     """Evaluates BM25, Dense, Hybrid, RRF, and Cross-Encoder methods."""
