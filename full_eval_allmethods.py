@@ -139,7 +139,7 @@ def cross_encoder_rerank(query, documents, batch_size=16):
         doc_texts.append(text)
 
     if not doc_texts:
-        print("⚠️ No valid documents found for reranking. Returning empty list.")
+        print(" No valid documents found for reranking. Returning empty list.")
         return []  # No valid documents to rerank
 
     #  Debugging: Print sample input
