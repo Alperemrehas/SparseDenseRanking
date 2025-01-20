@@ -128,11 +128,11 @@ def cross_encoder_rerank(query, documents, batch_size=16):
         if isinstance(doc, tuple) and len(doc) == 2:  
             doc_id, text = doc
         else:
-            print(f"⚠️ Skipping invalid document format: {doc}")
+            print(f" Skipping invalid document format: {doc}")
             continue
 
         if not isinstance(text, str) or not text.strip():
-            print(f"⚠️ Skipping document {doc_id}: Invalid or empty text format.")
+            print(f"Skipping document {doc_id}: Invalid or empty text format.")
             continue
 
         doc_ids.append(doc_id)
