@@ -143,8 +143,8 @@ def cross_encoder_rerank(query, documents, batch_size=16):
         return []  # No valid documents to rerank
 
     #  Debugging: Print sample input
-    print(f"🔍 Cross-Encoder Query: {query}")
-    print(f"📄 First 3 Docs for Reranking: {doc_texts[:3]}")
+    print(f" Cross-Encoder Query: {query}")
+    print(f" First 3 Docs for Reranking: {doc_texts[:3]}")
 
     reranked_results = []
     for i in range(0, len(doc_texts), batch_size):
